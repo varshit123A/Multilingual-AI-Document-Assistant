@@ -1,9 +1,12 @@
+import os
 import streamlit as st
 import google.generativeai as genai
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from gtts import gTTS
-import os
+
+from rag.ingestion import DocumentIngestion
+from rag.qa_chain import QAChain
 
 # -------------------------
 # Load Gemini API Key
@@ -15,9 +18,14 @@ genai.configure(
     api_key=os.getenv("GOOGLE_API_KEY")
 )
 
-model = genai.GenerativeModel(
-    "gemini-2.5-flash"
-)
+model = genai.GenerativeModel("gemini-2.5-flash")
+
+# -------------------------
+# Initialize RAG
+# -------------------------
+
+ingestion = DocumentIngestion()
+qa = QAChain()
 
 # -------------------------
 # Streamlit UI
@@ -33,21 +41,47 @@ uploaded_file = st.file_uploader(
 if uploaded_file:
 
     # -------------------------
-    # Extract PDF Text
+    # Save PDF
     # -------------------------
 
-    reader = PdfReader(uploaded_file)
+    os.makedirs("uploads", exist_ok=True)
+
+    pdf_path = os.path.join(
+        "uploads",
+        uploaded_file.name
+    )
+
+    with open(pdf_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
+
+    # -------------------------
+    # Extract Text
+    # -------------------------
+
+    reader = PdfReader(pdf_path)
 
     text = ""
 
     for page in reader.pages:
-
         page_text = page.extract_text()
 
         if page_text:
             text += page_text
 
     st.success("✅ PDF Loaded Successfully")
+
+    # -------------------------
+    # Index into Vector Database
+    # -------------------------
+
+    with st.spinner("Indexing document..."):
+
+        chunks = ingestion.ingest(pdf_path)
+
+    if chunks == 0:
+        st.info("Document already indexed.")
+    else:
+        st.success(f"Indexed {chunks} chunks successfully.")
 
     # -------------------------
     # Summarize PDF
@@ -65,58 +99,50 @@ if uploaded_file:
             {text}
             """
 
-            summary = model.generate_content(
-                summary_prompt
-            )
+            summary = model.generate_content(summary_prompt)
 
             st.subheader("Summary")
 
             st.write(summary.text)
 
         except Exception as e:
-
-            st.error(f"Error: {e}")
+            st.error(e)
 
     # -------------------------
-    # Ask Question
+    # Ask Questions (RAG)
     # -------------------------
 
     question = st.text_input(
         "Ask a Question about the PDF"
     )
 
-    answer = ""
-
     if st.button("Ask"):
 
         try:
 
-            prompt = f"""
-            Document:
-            {text}
+            with st.spinner("Searching document..."):
 
-            Question:
-            {question}
+                result = qa.ask(question)
 
-            Answer:
-            """
-
-            response = model.generate_content(
-                prompt
-            )
-
-            answer = response.text
+            answer = result["answer"]
 
             st.subheader("Answer")
 
             st.write(answer)
 
-            # Store answer
             st.session_state["answer"] = answer
+
+            st.subheader("Sources")
+
+            for source in result["sources"]:
+
+                st.write(
+                    f"📄 Page {source['page'] + 1}"
+                )
 
         except Exception as e:
 
-            st.error(f"Error: {e}")
+            st.error(e)
 
     # -------------------------
     # Translation
@@ -140,8 +166,7 @@ if uploaded_file:
             try:
 
                 translation_prompt = f"""
-                Translate the following text
-                into {language}
+                Translate the following text into {language}
 
                 Text:
                 {st.session_state['answer']}
@@ -155,13 +180,11 @@ if uploaded_file:
                     f"Translated ({language})"
                 )
 
-                st.write(
-                    translated.text
-                )
+                st.write(translated.text)
 
             except Exception as e:
 
-                st.error(f"Error: {e}")
+                st.error(e)
 
         # -------------------------
         # Text To Speech
@@ -175,14 +198,10 @@ if uploaded_file:
                     st.session_state["answer"]
                 )
 
-                tts.save(
-                    "output.mp3"
-                )
+                tts.save("output.mp3")
 
-                st.audio(
-                    "output.mp3"
-                )
+                st.audio("output.mp3")
 
             except Exception as e:
 
-                st.error(f"Error: {e}")
+                st.error(e)

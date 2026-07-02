@@ -39,4 +39,4 @@ streamlit run app.py
 * Chat History
 * DOCX Support
 * Voice Input
-* PDF Highlighting
+* PDF Highlighting 
