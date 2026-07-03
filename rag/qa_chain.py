@@ -1,12 +1,16 @@
 import os
 
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
+import google.generativeai as genai
 
 from rag.prompt import build_prompt
 from rag.retriever import Retriever
 
 load_dotenv()
+
+genai.configure(
+    api_key=os.getenv("GOOGLE_API_KEY")
+)
 
 
 class QAChain:
@@ -18,10 +22,8 @@ class QAChain:
 
         self.retriever = Retriever()
 
-        self.llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
-            temperature=0,
-            google_api_key=os.getenv("GOOGLE_API_KEY")
+        self.model = genai.GenerativeModel(
+            "gemini-2.5-flash"
         )
 
     def ask(self, question):
@@ -40,7 +42,6 @@ class QAChain:
             page = meta.get("page", 0)
 
             context += f"\n(Page {page + 1})\n"
-
             context += doc + "\n\n"
 
             sources.append(page + 1)
@@ -50,9 +51,9 @@ class QAChain:
             question=question
         )
 
-        response = self.llm.invoke(prompt)
+        response = self.model.generate_content(prompt)
 
         return {
-            "answer": response.content,
+            "answer": response.text,
             "sources": sorted(set(sources))
         }
