@@ -1,24 +1,25 @@
 import os
 import streamlit as st
-import google.generativeai as genai
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from gtts import gTTS
+
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 from rag.ingestion import DocumentIngestion
 from rag.qa_chain import QAChain
 
 # -------------------------
-# Load Gemini API Key
+# Load Environment Variables
 # -------------------------
 
 load_dotenv()
 
-genai.configure(
-    api_key=os.getenv("GOOGLE_API_KEY")
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    temperature=0,
+    google_api_key=os.getenv("GOOGLE_API_KEY")
 )
-
-model = genai.GenerativeModel("gemini-2.5-flash")
 
 # -------------------------
 # Initialize RAG
@@ -31,6 +32,11 @@ qa = QAChain()
 # Streamlit UI
 # -------------------------
 
+st.set_page_config(
+    page_title="Multilingual AI Document Assistant",
+    page_icon="📄"
+)
+
 st.title("📄 Multilingual AI Document Assistant")
 
 uploaded_file = st.file_uploader(
@@ -39,10 +45,6 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file:
-
-    # -------------------------
-    # Save PDF
-    # -------------------------
 
     os.makedirs("uploads", exist_ok=True)
 
@@ -55,7 +57,7 @@ if uploaded_file:
         f.write(uploaded_file.getbuffer())
 
     # -------------------------
-    # Extract Text
+    # Extract PDF Text
     # -------------------------
 
     reader = PdfReader(pdf_path)
@@ -63,6 +65,7 @@ if uploaded_file:
     text = ""
 
     for page in reader.pages:
+
         page_text = page.extract_text()
 
         if page_text:
@@ -71,7 +74,7 @@ if uploaded_file:
     st.success("✅ PDF Loaded Successfully")
 
     # -------------------------
-    # Index into Vector Database
+    # Index Document
     # -------------------------
 
     with st.spinner("Indexing document..."):
@@ -89,27 +92,27 @@ if uploaded_file:
 
     if st.button("📌 Summarize PDF"):
 
+        prompt = f"""
+Summarize the following document in 5 concise bullet points.
+
+Document:
+{text}
+"""
+
         try:
 
-            summary_prompt = f"""
-            Summarize the following document
-            in 5 concise bullet points.
-
-            Document:
-            {text}
-            """
-
-            summary = model.generate_content(summary_prompt)
+            response = llm.invoke(prompt)
 
             st.subheader("Summary")
 
-            st.write(summary.text)
+            st.write(response.content)
 
         except Exception as e:
+
             st.error(e)
 
     # -------------------------
-    # Ask Questions (RAG)
+    # Ask Question
     # -------------------------
 
     question = st.text_input(
@@ -118,31 +121,33 @@ if uploaded_file:
 
     if st.button("Ask"):
 
-        try:
+        if question.strip() == "":
+            st.warning("Please enter a question.")
 
-            with st.spinner("Searching document..."):
+        else:
 
-                result = qa.ask(question)
+            try:
 
-            answer = result["answer"]
+                with st.spinner("Searching document..."):
 
-            st.subheader("Answer")
+                    result = qa.ask(question)
 
-            st.write(answer)
+                answer = result["answer"]
 
-            st.session_state["answer"] = answer
+                st.subheader("Answer")
 
-            st.subheader("Sources")
+                st.write(answer)
 
-            for source in result["sources"]:
+                st.session_state["answer"] = answer
 
-                st.write(
-                    f"📄 Page {source['page'] + 1}"
-                )
+                st.subheader("Source Pages")
 
-        except Exception as e:
+                for page in result["sources"]:
+                    st.write(f"📄 Page {page}")
 
-            st.error(e)
+            except Exception as e:
+
+                st.error(e)
 
     # -------------------------
     # Translation
@@ -163,24 +168,20 @@ if uploaded_file:
 
         if st.button("Translate"):
 
+            prompt = f"""
+Translate the following text into {language}.
+
+Text:
+{st.session_state["answer"]}
+"""
+
             try:
 
-                translation_prompt = f"""
-                Translate the following text into {language}
+                translated = llm.invoke(prompt)
 
-                Text:
-                {st.session_state['answer']}
-                """
+                st.subheader(f"Translated ({language})")
 
-                translated = model.generate_content(
-                    translation_prompt
-                )
-
-                st.subheader(
-                    f"Translated ({language})"
-                )
-
-                st.write(translated.text)
+                st.write(translated.content)
 
             except Exception as e:
 
@@ -194,9 +195,7 @@ if uploaded_file:
 
             try:
 
-                tts = gTTS(
-                    st.session_state["answer"]
-                )
+                tts = gTTS(st.session_state["answer"])
 
                 tts.save("output.mp3")
 
