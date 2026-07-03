@@ -1,4 +1,51 @@
-venv/
-.env
+# Python
 __pycache__/
-output.mp3
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Environment variables
+.env
+
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python packaging
+build/
+dist/
+*.egg-info/
+
+# Streamlit cache
+.streamlit/
+
+# Uploaded documents
+uploads/
+
+# ChromaDB database
+vector_db/
+
+# Logs
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Pytest
+.pytest_cache/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Mypy
+.mypy_cache/
