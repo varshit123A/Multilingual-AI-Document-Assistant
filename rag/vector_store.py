@@ -1,5 +1,6 @@
 import uuid
-from chromadb import PersistentClient
+import chromadb
+from chromadb.config import DEFAULT_TENANT, DEFAULT_DATABASE
 
 
 class VectorStore:
@@ -8,16 +9,18 @@ class VectorStore:
     """
 
     def __init__(self, db_path="vector_db", collection_name="documents"):
-        self.client = PersistentClient(path=db_path)
+
+        self.client = chromadb.PersistentClient(
+            path=db_path,
+            tenant=DEFAULT_TENANT,
+            database=DEFAULT_DATABASE
+        )
 
         self.collection = self.client.get_or_create_collection(
             name=collection_name
         )
 
     def add_documents(self, chunks, embeddings):
-        """
-        Add document chunks to ChromaDB.
-        """
 
         ids = []
         documents = []
@@ -32,13 +35,10 @@ class VectorStore:
             ids=ids,
             documents=documents,
             embeddings=embeddings.tolist(),
-            metadatas=metadatas,
+            metadatas=metadatas
         )
 
     def document_exists(self, filename):
-        """
-        Check whether a document has already been indexed.
-        """
 
         results = self.collection.get(
             where={"source": filename}
@@ -47,21 +47,12 @@ class VectorStore:
         return len(results["ids"]) > 0
 
     def similarity_search(self, query_embedding, k=5):
-        """
-        Retrieve the top-k most similar documents.
-        """
 
-        results = self.collection.query(
+        return self.collection.query(
             query_embeddings=[query_embedding.tolist()],
             n_results=k,
-            include=["documents", "metadatas", "distances"],
+            include=["documents", "metadatas", "distances"]
         )
 
-        return results
-
     def count(self):
-        """
-        Return the total number of stored chunks.
-        """
-
         return self.collection.count()
