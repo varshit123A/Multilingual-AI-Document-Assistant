@@ -1,14 +1,20 @@
+import os
+
+from dotenv import load_dotenv
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
+load_dotenv()
 
 
 class EmbeddingModel:
     """
-    Generates embeddings using Google's embedding model.
+    Generates embeddings using Google's Gemini Embedding model.
     """
 
     def __init__(self):
         self.model = GoogleGenerativeAIEmbeddings(
-            model="models/text-embedding-004"
+            model="models/text-embedding-004",
+            google_api_key=os.getenv("GOOGLE_API_KEY")
         )
 
     def embed_documents(self, documents):

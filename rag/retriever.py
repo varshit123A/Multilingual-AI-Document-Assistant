@@ -5,17 +5,14 @@ from rag.vector_store import VectorStore
 class Retriever:
 
     def __init__(self):
-
         self.embedding_model = EmbeddingModel()
-        self.vector_db = VectorStore()
+        self.vector_store = VectorStore()
 
-    def retrieve(self, query, k=3):
+    def retrieve(self, query, k=5):
 
-        query_embedding = self.embedding_model.embed_query(query)
+        embedding = self.embedding_model.embed_query(query)
 
-        results = self.vector_db.similarity_search(
-            query_embedding=query_embedding,
+        return self.vector_store.similarity_search(
+            embedding,
             k=k
         )
-
-        return results

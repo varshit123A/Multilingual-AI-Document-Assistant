@@ -4,9 +4,7 @@ from chromadb import PersistentClient
 
 class VectorStore:
 
-    def __init__(self,
-                 db_path="vector_db",
-                 collection_name="documents"):
+    def __init__(self, db_path="vector_db", collection_name="documents"):
 
         self.client = PersistentClient(path=db_path)
 
@@ -34,11 +32,11 @@ class VectorStore:
 
     def document_exists(self, filename):
 
-        result = self.collection.get(
+        results = self.collection.get(
             where={"source": filename}
         )
 
-        return len(result["ids"]) > 0
+        return len(results["ids"]) > 0
 
     def similarity_search(self, query_embedding, k=5):
 
@@ -49,4 +47,5 @@ class VectorStore:
         )
 
     def count(self):
+
         return self.collection.count()
