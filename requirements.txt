@@ -12,7 +12,7 @@ langchain-core==0.3.68
 langchain-community==0.3.27
 langchain-text-splitters==0.3.8
 
-chromadb==1.0.15
+chromadb==0.5.5
 
 sentence-transformers==5.0.0
 transformers==4.53.2
