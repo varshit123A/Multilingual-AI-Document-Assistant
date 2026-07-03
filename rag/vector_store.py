@@ -1,20 +1,12 @@
 import uuid
-import chromadb
-from chromadb.config import DEFAULT_TENANT, DEFAULT_DATABASE
+from chromadb import PersistentClient
 
 
 class VectorStore:
-    """
-    Handles storage and retrieval of document embeddings using ChromaDB.
-    """
 
     def __init__(self, db_path="vector_db", collection_name="documents"):
 
-        self.client = chromadb.PersistentClient(
-            path=db_path,
-            tenant=DEFAULT_TENANT,
-            database=DEFAULT_DATABASE
-        )
+        self.client = PersistentClient(path=db_path)
 
         self.collection = self.client.get_or_create_collection(
             name=collection_name
@@ -40,10 +32,7 @@ class VectorStore:
 
     def document_exists(self, filename):
 
-        results = self.collection.get(
-            where={"source": filename}
-        )
-
+        results = self.collection.get(where={"source": filename})
         return len(results["ids"]) > 0
 
     def similarity_search(self, query_embedding, k=5):
