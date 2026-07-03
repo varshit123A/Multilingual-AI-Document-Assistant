@@ -1,38 +1,25 @@
-from sentence_transformers import SentenceTransformer
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 
 class EmbeddingModel:
     """
-    Generates embeddings for text using Sentence Transformers.
+    Generates embeddings using Google's embedding model.
     """
 
-    def __init__(self, model_name="all-MiniLM-L6-v2"):
-        self.model = SentenceTransformer(model_name)
+    def __init__(self):
+        self.model = GoogleGenerativeAIEmbeddings(
+            model="models/text-embedding-004"
+        )
 
     def embed_documents(self, documents):
-        """
-        Generate embeddings for LangChain Documents or plain strings.
-        """
 
-        # If LangChain Documents are passed
         if len(documents) > 0 and hasattr(documents[0], "page_content"):
             texts = [doc.page_content for doc in documents]
         else:
             texts = documents
 
-        return self.model.encode(
-            texts,
-            convert_to_numpy=True,
-            normalize_embeddings=True
-        )
+        return self.model.embed_documents(texts)
 
     def embed_query(self, query):
-        """
-        Generate embedding for a single query.
-        """
 
-        return self.model.encode(
-            query,
-            convert_to_numpy=True,
-            normalize_embeddings=True
-        )
+        return self.model.embed_query(query)

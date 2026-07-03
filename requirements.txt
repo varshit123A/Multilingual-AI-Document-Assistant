@@ -1,23 +1,17 @@
 streamlit==1.47.0
-langchain-google-genai==2.1.8
-python-dotenv==1.1.1
-
-PyPDF2==3.0.1
-gTTS==2.5.4
 
 langchain==0.3.26
 langchain-core==0.3.68
 langchain-community==0.3.27
 langchain-text-splitters==0.3.8
+langchain-google-genai==2.1.8
 
 chromadb==0.6.3
 
-sentence-transformers==5.0.0
-transformers==4.53.2
-torch
-torchvision
-
+python-dotenv==1.1.1
+PyPDF2==3.0.1
+gTTS==2.5.4
 pymupdf==1.26.3
 
-numpy
-pandas
+numpy==2.2.6
+pandas==2.3.3

@@ -28,7 +28,7 @@ class VectorStore:
         self.collection.add(
             ids=ids,
             documents=documents,
-            embeddings=embeddings.tolist(),
+            embeddings=embeddings,
             metadatas=metadatas
         )
 
@@ -43,7 +43,7 @@ class VectorStore:
     def similarity_search(self, query_embedding, k=5):
 
         return self.collection.query(
-            query_embeddings=[query_embedding.tolist()],
+            query_embeddings=[query_embedding],
             n_results=k,
             include=["documents", "metadatas", "distances"]
         )
